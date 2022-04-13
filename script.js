@@ -10,6 +10,11 @@ var mapSize = [0,0]
 var bs = 50
 var obstacles = "#Z"
 
+function arrPush(arr){
+	for (var i = 1; i < arguments.length; i++) {
+    	arr.indexOf(arguments[i])==-1?arr.push(arguments[i]):0
+	}
+}
 function loadLevel(a){
 	var js = document.createElement("script")
 	js.type = "text/javascript"
@@ -27,22 +32,26 @@ function display(){
 	for (var i = 0; i<level.map.length; i++){
 		for (var j = 0; j<level.map[0].length; j++){
 			switch (level.map[i][j]){
-				case "#":
+				case "#": //block
 					ctx.fillStyle = 'black'
 					ctx.fillRect(j*bs+350-playerCoords[1],i*bs+250-playerCoords[0],bs,bs)
 					break
-				case "Z":
+				case "Z": //zipper
 					ctx.fillStyle = 'black'
 					ctx.fillRect(j*bs+350-playerCoords[1],i*bs+250-playerCoords[0],bs,bs/2)
 					ctx.fillStyle = 'yellow'
 					ctx.fillRect(j*bs+350-playerCoords[1],i*bs+275-playerCoords[0],bs,bs/2)
 					break
-				case "W":
-					ctx.fillStyle = 'green'
+				case "D": //death
+					ctx.fillStyle = 'red'
 					ctx.fillRect(j*bs+350-playerCoords[1],i*bs+250-playerCoords[0],bs,bs)
 					break
-				case "D":
-					ctx.fillStyle = 'red'
+				case "I": //info
+					ctx.font = (bs/2+"px Arial")
+					ctx.fillText("Level: "+level.id, j*bs-playerCoords[1]+350, i*bs-playerCoords[0]+250+bs/2)
+					break
+				case "W": //WIN
+					ctx.fillStyle = 'green'
 					ctx.fillRect(j*bs+350-playerCoords[1],i*bs+250-playerCoords[0],bs,bs)
 					break
 			}
@@ -52,65 +61,107 @@ function display(){
 	ctx.fillStyle = 'red'
 	ctx.fill();
 }
-function checkHitboxes(x=playerCoords[1], y=playerCoords[0]){
+function checkHitboxes(x=playerCoords[1], y=playerCoords[0]){ //checking hitbox and events
 	var xx = Math.floor((x+bs/2)/bs)
 	var yy = Math.floor((y+bs/2)/bs)
-	//console.log(xx+" "+yy)
-	//var surroundings = [level.map[yy-1][xx-1]+level.map[yy-1][xx]+level.map[yy-1][xx+1],level.map[yy][xx-1]+level.map[yy][xx]+level.map[yy][xx+1],level.map[yy+1][xx-1]+level.map[yy+1][xx]+level.map[yy+1][xx+1]]
-	var hitted = []
 	/* WIN */
 	if (level.map[yy][xx] == "W"){
-		hitted.push("WIN")
+		return ["WIN"]
 	}
 	else if (level.map[yy][xx] == "D"){
-		hitted.push("LOSE")
+		return ["LOSE"]
 	}
 	else{
+		var hitted = []
+		var hae = [] //hitted and events
+
 		/* indise */
-		if (obstacles.indexOf(level.map[yy][xx])!=-1){
-			hitted.push("inside")
-		}
+		level.map[yy][xx]!=" "?arrPush(hitted,"in"):0
 		/* ⬁ */
-		if (false){
-			hitted.indexOf("top")==-1?hitted.push("top"):0
-			hitted.indexOf("left")==-1?hitted.push("left"):0
+		if (level.map[yy-1][xx-1]!=" " && Math.sqrt(Math.pow(Math.abs((xx*bs-bs/2)-x),2)+Math.pow(Math.abs((yy*bs-bs/2)-y),2))<=bs/2){
+			arrPush(hitted,"lt")
+			//obstacles.indexOf(level.map[yy-1][xx-1])!=-1?(arrPush(hae,"lt"),console.log(1)):0
 		}
 		/* ⇧ */
-		if (obstacles.indexOf(level.map[yy-1][xx])!=-1 && yy*bs>=y){
-			hitted.indexOf("top")==-1?hitted.push("top"):0
-			if (level.map[yy-1][xx] == "Z" && yy*bs>=y){
-				hitted.push("zipline")
-			}
+		if (level.map[yy-1][xx]!=" " && yy*bs>=y){
+			arrPush(hitted,"t")
 		}
 		/* ⬀ */
-		if (false){
-			hitted.indexOf("top")==-1?hitted.push("top"):0
-			hitted.indexOf("right")==-1?hitted.push("right"):0
+		if (level.map[yy-1][xx+1]!=" " && Math.sqrt(Math.pow(Math.abs((xx*bs+bs/2)-x),2)+Math.pow(Math.abs((yy*bs-bs/2)-y),2))<=bs/2){
+			arrPush(hitted,"rt")
 		}
 		/* ⇦ */
-		if (obstacles.indexOf(level.map[yy][xx-1])!=-1 && xx*bs>=x){
-			hitted.indexOf("left")==-1?hitted.push("left"):0
+		if (level.map[yy][xx-1]!=" " && xx*bs>=x){
+			arrPush(hitted, "l")
 		}
 		/* ⇨ */
-		if (obstacles.indexOf(level.map[yy][xx+1])!=-1 && xx*bs<=x){
-			hitted.indexOf("right")==-1?hitted.push("right"):0
+		if (level.map[yy][xx+1]!=" " && xx*bs<=x){ 
+			arrPush(hitted, "r")
 		}
-		/* ⬃ */
-		if ((yy+1)<level.map.length && false){
-			hitted.indexOf("down")==-1?hitted.push("down"):0
-			hitted.indexOf("left")==-1?hitted.push("left"):0
+		/* ⬃⇩⬂ */
+		// Ciekawy efekt: if ((yy+1)<level.map.length && level.map[yy+1][xx-1])!=-1 && Math.sqrt(Math.abs(y-(yy+1)*bs)*Math.abs(x-(xx-1)*bs))<=bs){
+		if ((yy+1)<level.map.length){
+			/* ⬃ */
+			if (level.map[yy+1][xx-1]!=" " && Math.sqrt(Math.pow(Math.abs((xx*bs-bs/2)-x),2)+Math.pow(Math.abs((yy*bs+bs/2)-y),2))<=bs/2){
+				arrPush(hitted,"ld")
+			}
+			/* ⇩ */
+			if (level.map[yy+1][xx]!=" " && yy*bs<=y){
+				arrPush(hitted,"d")
+			}
+			/* ⬂ */
+			if (level.map[yy+1][xx+1]!=" " && Math.sqrt(Math.pow(Math.abs((xx*bs+bs/2)-x),2)+Math.pow(Math.abs((yy*bs+bs/2)-y),2))<=bs/2){
+				arrPush(hitted,"rd")
+			}
 		}
-		/* ⇩ */
-		if ((yy+1)<level.map.length && obstacles.indexOf(level.map[yy+1][xx])!=-1 && yy*bs<=y){
-			hitted.indexOf("down")==-1?hitted.push("down"):0
-		}
-		/* ⬂ */
-		if ((yy+1)<level.map.length && false){
-			hitted.indexOf("down")==-1?hitted.push("down"):0
-			hitted.indexOf("right")==-1?hitted.push("right"):0
+
+		for (var i of hitted){
+			var block
+			switch (i){
+				case "in": //indise
+					obstacles.indexOf(block)!=-1?arrPush(hae,"inside"):0
+					obstacles.indexOf(block)!=-1?arrPush(hae,"down"):0
+					break
+				case "lt": //left,top
+					block = level.map[yy-1][xx-1]
+					obstacles.indexOf(block)!=-1?arrPush(hae, "top", "left"):0
+					break
+				case "t": //top
+					block = level.map[yy-1][xx]
+					obstacles.indexOf(block)!=-1?arrPush(hae, "top"):0
+					block=="Z"?arrPush(hae, "zipline"):0
+					break
+				case "rt": //right,top
+					block = level.map[yy-1][xx+1]
+					obstacles.indexOf(block)!=-1?(arrPush(hae,"top", "right")):0
+					break
+				case "l": //left
+					block = level.map[yy][xx-1]
+					obstacles.indexOf(block)!=-1?arrPush(hae, "left"):0
+					//xx*bs>x?arrPush(hitted, "d"):0
+					break
+				case "r": //right
+					block = level.map[yy][xx+1]
+					obstacles.indexOf(block)!=-1?arrPush(hae, "right"):0
+					//xx*bs<x?arrPush(hitted, "d"):0
+					break
+				case "ld": //left,down
+					block = level.map[yy+1][xx-1]
+					obstacles.indexOf(block)!=-1?arrPush(hae, "down"):0
+					break
+				case "d": //down
+					block = level.map[yy+1][xx]
+					obstacles.indexOf(block)!=-1?arrPush(hae, "down"):0
+					break
+				case "rd": //right,down
+					block = level.map[yy+1][xx+1]
+					obstacles.indexOf(block)!=-1?arrPush(hae, "down"):0
+					break
+			}
+			block=="D"?arrPush(hae, "LOSE"):0
 		}
 	}
-	return hitted
+	return hae
 	//console.log(surroundings[0]+"\n"+surroundings[1]+"\n"+surroundings[2])
 }
 function gameLoop(){
@@ -185,7 +236,7 @@ function runLevel(a=level.id){
 	},1)
 }
 function nextLevel(){
-	runLevel(level.id+1)
+	level.lastLevel?runLevel(1):runLevel(level.id+1)
 }
 function keyChecker(a, b){
 	if (b){
@@ -207,4 +258,3 @@ document.addEventListener('keyup', (e) => {
 	keyChecker(e.code, false)
 });
 runLevel(1)
-setTimeout(display,1)
