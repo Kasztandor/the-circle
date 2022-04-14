@@ -2,13 +2,15 @@ var level = {}
 var gameLoopInterval
 var pressedButtons = []
 var moveDirection
-var jumpVector = 0
+var upVector = 0
 var canvas = document.querySelector("canvas")
 var ctx = canvas.getContext("2d")
 var playerCoords = [0,0]
 var mapSize = [0,0]
 var bs = 50
 var obstacles = "#Z"
+var levelId = 1
+var h = []
 
 function arrPush(arr){
 	for (var i = 1; i < arguments.length; i++) {
@@ -50,6 +52,16 @@ function display(){
 					ctx.font = (bs/2+"px Arial")
 					ctx.fillText("Level: "+level.id, j*bs-playerCoords[1]+350, i*bs-playerCoords[0]+250+bs/2)
 					break
+				case "L": //liquid
+					ctx.fillStyle = 'lightblue'
+					ctx.fillRect(j*bs+350-playerCoords[1],i*bs+250-playerCoords[0],bs,bs)
+					break
+				case "U": //upper
+					ctx.fillStyle = 'black'
+					ctx.fillRect(j*bs+350-playerCoords[1],i*bs+250-playerCoords[0],bs,bs/2)
+					ctx.fillStyle = 'gray'
+					ctx.fillRect(j*bs+350-playerCoords[1],i*bs+275-playerCoords[0],bs,bs/2)
+					break
 				case "W": //WIN
 					ctx.fillStyle = 'green'
 					ctx.fillRect(j*bs+350-playerCoords[1],i*bs+250-playerCoords[0],bs,bs)
@@ -72,96 +84,77 @@ function checkHitboxes(x=playerCoords[1], y=playerCoords[0]){ //checking hitbox 
 		return ["LOSE"]
 	}
 	else{
-		var hitted = []
-		var hae = [] //hitted and events
+		while (h.length>0){
+			h.pop()
+		}
 
 		/* indise */
-		level.map[yy][xx]!=" "?arrPush(hitted,"in"):0
+		if (level.map[yy][xx]!=" "){
+			block = level.map[yy][xx]
+			obstacles.indexOf(block)!=-1?arrPush(h,"inside"):0
+			obstacles.indexOf(block)!=-1?arrPush(h,"down"):0
+			block=="D"?arrPush(h, "LOSE"):0
+			block=="L"?arrPush(h, "liquid"):0
+			block=="U"?arrPush(h, "down"):0
+		}
 		/* ⬁ */
 		if (level.map[yy-1][xx-1]!=" " && Math.sqrt(Math.pow(Math.abs((xx*bs-bs/2)-x),2)+Math.pow(Math.abs((yy*bs-bs/2)-y),2))<=bs/2){
-			arrPush(hitted,"lt")
-			//obstacles.indexOf(level.map[yy-1][xx-1])!=-1?(arrPush(hae,"lt"),console.log(1)):0
+			block = level.map[yy-1][xx-1]
+			obstacles.indexOf(block)!=-1?arrPush(h, "top", /*"left"*/):0
+			block=="D"?arrPush(h, "LOSE"):0
 		}
 		/* ⇧ */
 		if (level.map[yy-1][xx]!=" " && yy*bs>=y){
-			arrPush(hitted,"t")
+			block = level.map[yy-1][xx]
+			obstacles.indexOf(block)!=-1?arrPush(h, "top"):0
+			block=="Z"?arrPush(h, "zipline"):0
+			block=="D"?arrPush(h, "LOSE"):0
 		}
 		/* ⬀ */
 		if (level.map[yy-1][xx+1]!=" " && Math.sqrt(Math.pow(Math.abs((xx*bs+bs/2)-x),2)+Math.pow(Math.abs((yy*bs-bs/2)-y),2))<=bs/2){
-			arrPush(hitted,"rt")
+			block = level.map[yy-1][xx+1]
+			obstacles.indexOf(block)!=-1?(arrPush(h,"top", /*"right"*/)):0
+			block=="D"?arrPush(h, "LOSE"):0
 		}
 		/* ⇦ */
 		if (level.map[yy][xx-1]!=" " && xx*bs>=x){
-			arrPush(hitted, "l")
+			block = level.map[yy][xx-1]
+			obstacles.indexOf(block)!=-1?arrPush(h, "left"):0
+			block=="D"?arrPush(h, "LOSE"):0
+			//xx*bs>x?arrPush(h, "down"):0
 		}
 		/* ⇨ */
 		if (level.map[yy][xx+1]!=" " && xx*bs<=x){ 
-			arrPush(hitted, "r")
+			block = level.map[yy][xx+1]
+			obstacles.indexOf(block)!=-1?arrPush(h, "right"):0
+			block=="D"?arrPush(h, "LOSE"):0
+			//xx*bs<x?arrPush(h, "down"):0
 		}
 		/* ⬃⇩⬂ */
 		// Ciekawy efekt: if ((yy+1)<level.map.length && level.map[yy+1][xx-1])!=-1 && Math.sqrt(Math.abs(y-(yy+1)*bs)*Math.abs(x-(xx-1)*bs))<=bs){
 		if ((yy+1)<level.map.length){
 			/* ⬃ */
 			if (level.map[yy+1][xx-1]!=" " && Math.sqrt(Math.pow(Math.abs((xx*bs-bs/2)-x),2)+Math.pow(Math.abs((yy*bs+bs/2)-y),2))<=bs/2){
-				arrPush(hitted,"ld")
+				block = level.map[yy+1][xx-1]
+				obstacles.indexOf(block)!=-1?arrPush(h, "down"):0
+				block=="D"?arrPush(h, "LOSE"):0
 			}
 			/* ⇩ */
 			if (level.map[yy+1][xx]!=" " && yy*bs<=y){
-				arrPush(hitted,"d")
+				block = level.map[yy+1][xx]
+				obstacles.indexOf(block)!=-1?arrPush(h, "down"):0
+				block=="D"?arrPush(h, "LOSE"):0
+				block=="U"?arrPush(h, "down"):0
 			}
 			/* ⬂ */
 			if (level.map[yy+1][xx+1]!=" " && Math.sqrt(Math.pow(Math.abs((xx*bs+bs/2)-x),2)+Math.pow(Math.abs((yy*bs+bs/2)-y),2))<=bs/2){
-				arrPush(hitted,"rd")
+				block = level.map[yy+1][xx+1]
+				obstacles.indexOf(block)!=-1?arrPush(h, "down"):0
+				block=="D"?arrPush(h, "LOSE"):0
 			}
-		}
-
-		for (var i of hitted){
-			var block
-			switch (i){
-				case "in": //indise
-					obstacles.indexOf(block)!=-1?arrPush(hae,"inside"):0
-					obstacles.indexOf(block)!=-1?arrPush(hae,"down"):0
-					break
-				case "lt": //left,top
-					block = level.map[yy-1][xx-1]
-					obstacles.indexOf(block)!=-1?arrPush(hae, "top", "left"):0
-					break
-				case "t": //top
-					block = level.map[yy-1][xx]
-					obstacles.indexOf(block)!=-1?arrPush(hae, "top"):0
-					block=="Z"?arrPush(hae, "zipline"):0
-					break
-				case "rt": //right,top
-					block = level.map[yy-1][xx+1]
-					obstacles.indexOf(block)!=-1?(arrPush(hae,"top", "right")):0
-					break
-				case "l": //left
-					block = level.map[yy][xx-1]
-					obstacles.indexOf(block)!=-1?arrPush(hae, "left"):0
-					//xx*bs>x?arrPush(hitted, "d"):0
-					break
-				case "r": //right
-					block = level.map[yy][xx+1]
-					obstacles.indexOf(block)!=-1?arrPush(hae, "right"):0
-					//xx*bs<x?arrPush(hitted, "d"):0
-					break
-				case "ld": //left,down
-					block = level.map[yy+1][xx-1]
-					obstacles.indexOf(block)!=-1?arrPush(hae, "down"):0
-					break
-				case "d": //down
-					block = level.map[yy+1][xx]
-					obstacles.indexOf(block)!=-1?arrPush(hae, "down"):0
-					break
-				case "rd": //right,down
-					block = level.map[yy+1][xx+1]
-					obstacles.indexOf(block)!=-1?arrPush(hae, "down"):0
-					break
-			}
-			block=="D"?arrPush(hae, "LOSE"):0
 		}
 	}
-	return hae
+	return h
 	//console.log(surroundings[0]+"\n"+surroundings[1]+"\n"+surroundings[2])
 }
 function gameLoop(){
@@ -173,54 +166,63 @@ function gameLoop(){
 		runLevel()
 	}
 	else{
-		/* check jump */
-		var allowJump = false
-		if (pressedButtons.indexOf("ArrowUp") !== -1 || pressedButtons.indexOf("KeyW") !== -1){
-			if (checkHitboxes().indexOf("down")!=-1){
-				jumpVector = 15
-				allowJump = true
-			}
+		// is player jumping?
+		var jump = false
+		if ((pressedButtons.indexOf("ArrowUp") !== -1 || pressedButtons.indexOf("KeyW") !== -1) && checkHitboxes().indexOf("down")!=-1 && checkHitboxes().indexOf("liquid")==-1){
+			jump = true
 		}
-		if (pressedButtons.indexOf("ArrowLeft") !== -1 || pressedButtons.indexOf("KeyA") !== -1){
-			if (checkHitboxes().indexOf("left")==-1){
-				playerCoords[1] -= 10
-			}
+		// is player moving?
+		if ((pressedButtons.indexOf("ArrowLeft") !== -1 || pressedButtons.indexOf("KeyA") !== -1) && checkHitboxes().indexOf("left")==-1){
+			playerCoords[1] -= 10
 		}
-		else if (pressedButtons.indexOf("ArrowRight") !== -1 || pressedButtons.indexOf("KeyD") !== -1){
-			if (checkHitboxes().indexOf("right")==-1){
-				playerCoords[1] += 10
-			}
+		else if ((pressedButtons.indexOf("ArrowRight") !== -1 || pressedButtons.indexOf("KeyD") !== -1) && checkHitboxes().indexOf("right")==-1){
+			playerCoords[1] += 10
 		}
-		/* make jump and calculate jump vector */
-		if (checkHitboxes().indexOf("down")!=-1 && allowJump==false){
-			jumpVector=0
+		// jumping
+		if (jump){
+			upVector = 15
 		}
 		else{
-			playerCoords[0]-=jumpVector
-			jumpVector<=35?jumpVector-=1:0
-		}
-		/* repair inside block situations */
-		if (checkHitboxes().indexOf("down")!=-1 || checkHitboxes().indexOf("inside")!=-1){
-			while (checkHitboxes().indexOf("down")!=-1 || checkHitboxes().indexOf("inside")!=-1){
-				playerCoords[0]--
+			var falling = true
+			if (checkHitboxes().indexOf("liquid")!=-1){
+				checkHitboxes().indexOf("top")==-1?upVector++:0
+				checkHitboxes().indexOf("down")!=-1?upVector=1:0
+				upVector++
 			}
-			playerCoords[0]++
-		}
-		else if(checkHitboxes().indexOf("top")!=-1){
-			if (jumpVector>0 || checkHitboxes().indexOf("zipline")!=-1){
-				jumpVector=0
+			else{
+				if (checkHitboxes().indexOf("down")!=-1){
+					upVector = 0
+					upVector++
+				}
+				if(checkHitboxes().indexOf("top")!=-1){
+					upVector = 0
+				}
 			}
+			if (checkHitboxes().indexOf("zipline")!=-1){
+				upVector++
+			}
+			upVector--
+			upVector<-30?upVector=-30:0
+			upVector>30?upVector=30:0
+		}
+		playerCoords[0]-=upVector
+		// correcting under roof position
+		if (checkHitboxes().indexOf("top")!=-1){
 			while (checkHitboxes().indexOf("top")!=-1){
 				playerCoords[0]++
 			}
 			playerCoords[0]--
 		}
+		if (checkHitboxes().indexOf("down")!=-1){
+			while (checkHitboxes().indexOf("down")!=-1){
+				playerCoords[0]--
+			}
+			playerCoords[0]++
+		}
 	}
-	//console.log("X:"+playerCoords[1]+" Y: "+playerCoords[0])
-	//console.log(h)
 	display()
 }
-function runLevel(a=level.id){
+function runLevel(a=levelId){
 	clearInterval(gameLoopInterval)
 	loadLevel(a)
 	setTimeout(()=>{
@@ -232,6 +234,7 @@ function runLevel(a=level.id){
 				}
 			}
 		}
+		levelId = a
 		gameLoopInterval = setInterval(gameLoop, 33)
 	},1)
 }
@@ -257,4 +260,4 @@ document.addEventListener('keydown', (e) => {
 document.addEventListener('keyup', (e) => {
 	keyChecker(e.code, false)
 });
-runLevel(1)
+runLevel()
