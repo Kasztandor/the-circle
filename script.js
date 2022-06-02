@@ -9,7 +9,7 @@ var playerCoords = [0,0]
 var mapSize = [0,0]
 var bs = 50
 var obstacles = "#Z"
-var levelId = 1
+var levelId = 8
 var h = []
 
 function arrPush(arr){
@@ -155,14 +155,13 @@ function checkHitboxes(x=playerCoords[1], y=playerCoords[0]){ //checking hitbox 
 		}
 	}
 	return h
-	//console.log(surroundings[0]+"\n"+surroundings[1]+"\n"+surroundings[2])
 }
 function gameLoop(){
 	/* WIN */
 	if (checkHitboxes().indexOf("WIN")!=-1){
 		nextLevel()
 	}
-	else if (checkHitboxes().indexOf("LOSE")!=-1){
+	else if (h.indexOf("LOSE")!=-1){
 		runLevel()
 	}
 	else{
@@ -185,7 +184,7 @@ function gameLoop(){
 		else{
 			var falling = true
 			if (checkHitboxes().indexOf("liquid")!=-1){
-				checkHitboxes().indexOf("top")==-1?upVector++:0
+				checkHitboxes().indexOf("top")==-1?upVector++:upVector=0
 				checkHitboxes().indexOf("down")!=-1?upVector=1:0
 				upVector++
 			}
@@ -236,7 +235,7 @@ function runLevel(a=levelId){
 		}
 		levelId = a
 		gameLoopInterval = setInterval(gameLoop, 33)
-	},1)
+	},5)
 }
 function nextLevel(){
 	level.lastLevel?runLevel(1):runLevel(level.id+1)

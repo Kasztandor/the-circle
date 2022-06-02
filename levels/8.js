@@ -1,4 +1,4 @@
-level = {"mode":"N","id":7,"map":
+level = {"lastLevel":true,"mode":"N","id":8,"map":
 ["###########################"
 ,"#I           #            #"
 ,"#            #            #"
